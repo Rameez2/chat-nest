@@ -12,13 +12,27 @@ export default function ManualWebRTC() {
 
   useEffect(() => {
     // const peerConnection = new RTCPeerConnection();
-    
+
     // Google’s free STUN server
-    const peerConnection = new RTCPeerConnection({
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' }
-  ]
-});
+    //     const peerConnection = new RTCPeerConnection({
+    //   iceServers: [
+    //     { urls: 'stun:stun.l.google.com:19302' }
+    //   ]
+    // });
+
+    // TURN server
+
+
+    const iceServers = [
+      { urls: "stun:stun.l.google.com:19302" },
+      {
+        urls: "turn:turn.anyfirewall.com:443?transport=tcp",
+        username: "webrtc",
+        credential: "webrtc",
+      }
+    ];
+    const peerConnection = new RTCPeerConnection({ iceServers });
+
     setPc(peerConnection);
 
     // Handle incoming media
@@ -40,12 +54,28 @@ export default function ManualWebRTC() {
     };
   }, []);
 
+
+  // create offer
   const createOffer = async () => {
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
+    try {
+      // Inside createOffer()
+      if (!pc) return alert('Peer connection not ready');
+
+      // Similar checks for receiveOffer and addAnswer
+
+      console.log('creating offer...');
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+    } catch (error) {
+      console.log(error);
+
+    }
   };
 
   const receiveOffer = async () => {
+    console.log('recieving offer...');
+
     const offer = JSON.parse(remoteSDP);
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
     const answer = await pc.createAnswer();
@@ -53,9 +83,20 @@ export default function ManualWebRTC() {
   };
 
   const addAnswer = async () => {
-    const answer = JSON.parse(remoteSDP);
-    await pc.setRemoteDescription(new RTCSessionDescription(answer));
+
+    try {
+
+      console.log('recieving offer...');
+      const answer = JSON.parse(remoteSDP);
+      await pc.setRemoteDescription(new RTCSessionDescription(answer));
+    } catch (error) {
+      console.log(error);
+
+    }
+
   };
+
+
 
   return (
     <div className="space-y-4 p-4">

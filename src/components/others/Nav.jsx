@@ -1,8 +1,31 @@
 import Link from 'next/link';
 
+    // position: sticky;
+    // top: 0;
+    // background: rgba(255, 255, 255, 0.1);
+    // backdrop-filter: blur(5px);
+    // -webkit-backdrop-filter: blur(10px);
+    // padding: 1.5rem 1rem;
+    // margin: 0 auto;
+    // max-width: 1280px;
+    // box-sizing: border-box;
+    // z-index: 50;
+    // border-bottom: 2px solid #dcdcdc;
+
 const Nav = () => {
     return (
-      <header className="container mx-auto px-4 py-6">
+      // <header className="container mx-auto px-4 py-6">
+      <header
+  className="
+    container mx-auto px-4 py-6
+    sticky top-0
+    bg-[rgba(255,255,255,0.1)]
+    backdrop-blur-sm
+    border-b-2 border-gray-300
+    z-50
+    box-border
+  "
+>
         <nav className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
