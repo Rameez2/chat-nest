@@ -1,105 +1,114 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Peer from 'simple-peer';
 
 export default function ManualWebRTC() {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
 
-  const [peer, setPeer] = useState(null);
-  const [yourSDP, setYourSDP] = useState('');
+  const [localSDP, setLocalSDP] = useState('');
   const [remoteSDP, setRemoteSDP] = useState('');
-  const [stream, setStream] = useState(null);
-  const [connected, setConnected] = useState(false);
-  const [logs, setLogs] = useState([]);
-
-  const log = (msg) => {
-    console.log(msg);
-    setLogs((prev) => [...prev, msg]);
-  };
+  const [pc, setPc] = useState(null);
 
   useEffect(() => {
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then((mediaStream) => {
-        setStream(mediaStream);
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = mediaStream;
-        }
-        log('✅ Local media stream acquired.');
-      })
-      .catch((err) => {
-        log('❌ Failed to get media: ' + err.message);
-      });
+    // const peerConnection = new RTCPeerConnection();
+
+    // Google’s free STUN server
+    //     const peerConnection = new RTCPeerConnection({
+    //   iceServers: [
+    //     { urls: 'stun:stun.l.google.com:19302' }
+    //   ]
+    // });
+
+    // TURN server
+
+
+const iceServers = [
+  { urls: ["stun:bn-turn2.xirsys.com"] },
+  {
+    username: "8fUyCPsN4iaQBVt2m85Z7C0-mF6AQK-2yCqX4BlxnxDykeOCip2JN20jhSC7JgoiAAAAAGhZs6JyYW1lZXpyb290",
+    credential: "77d21974-506d-11f0-bb59-0242ac140004",
+    urls: [
+      "turn:bn-turn2.xirsys.com:80?transport=udp",
+      "turn:bn-turn2.xirsys.com:3478?transport=udp",
+      "turn:bn-turn2.xirsys.com:80?transport=tcp",
+      "turn:bn-turn2.xirsys.com:3478?transport=tcp",
+      "turns:bn-turn2.xirsys.com:443?transport=tcp",
+      "turns:bn-turn2.xirsys.com:5349?transport=tcp",
+    ]
+  }
+];
+
+    const peerConnection = new RTCPeerConnection({ iceServers });
+
+    setPc(peerConnection);
+
+    // Handle incoming media
+    peerConnection.ontrack = (event) => {
+      remoteVideoRef.current.srcObject = event.streams[0];
+    };
+
+    // Get user media
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then((stream) => {
+      localVideoRef.current.srcObject = stream;
+      stream.getTracks().forEach((track) => peerConnection.addTrack(track, stream));
+    });
+
+    // Handle ICE candidates (trickle ICE disabled for now)
+    peerConnection.onicecandidate = (event) => {
+      if (event.candidate === null) {
+        setLocalSDP(JSON.stringify(peerConnection.localDescription));
+      }
+    };
   }, []);
 
-  const createPeer = (initiator) => {
-    if (!stream) {
-      log('⚠️ Media stream not ready.');
-      return;
+
+  // create offer
+  const createOffer = async () => {
+    try {
+      // Inside createOffer()
+      if (!pc) return alert('Peer connection not ready');
+
+      // Similar checks for receiveOffer and addAnswer
+
+      console.log('creating offer...');
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+    } catch (error) {
+      console.log(error);
+
     }
-
-    log(initiator ? '🚀 Initiator started.' : '📥 Receiver started.');
-
-    const newPeer = new Peer({
-      initiator: initiator,
-      trickle: false,
-      stream: stream,
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          {
-            urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
-            username: 'webrtc',
-            credential: 'webrtc',
-          },
-        ],
-      },
-    });
-
-    newPeer.on('signal', (data) => {
-      setYourSDP(JSON.stringify(data, null, 2));
-      log('📤 Local SDP generated.');
-    });
-
-    newPeer.on('stream', (remoteStream) => {
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = remoteStream;
-        setConnected(true);
-        log('🎥 Remote stream received. Connection established!');
-      }
-    });
-
-    newPeer.on('error', (err) => {
-      log('❌ Peer error: ' + err.message);
-    });
-
-    newPeer.on('connect', () => {
-      log('🔗 Data connection established.');
-    });
-
-    setPeer(newPeer);
   };
 
-  const handleRemoteSignal = () => {
-    if (!peer) {
-      alert("Create or receive a peer first.");
-      return;
-    }
+  const receiveOffer = async () => {
+    console.log('recieving offer...');
+
+    const offer = JSON.parse(remoteSDP);
+    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+  };
+
+  const addAnswer = async () => {
 
     try {
-      log('📥 Remote SDP submitted.');
-      const signal = JSON.parse(remoteSDP);
-      peer.signal(signal);
-    } catch (err) {
-      log('❌ Failed to parse remote SDP.');
-      alert("Invalid SDP format.");
+
+      console.log('recieving offer...');
+      const answer = JSON.parse(remoteSDP);
+      await pc.setRemoteDescription(new RTCSessionDescription(answer));
+    } catch (error) {
+      console.log(error);
+
     }
+
   };
+
+
 
   return (
     <div className="space-y-4 p-4">
-      <h2 className="text-xl font-bold">Manual WebRTC with Simple-Peer (JS)</h2>
+      <h2 className="text-xl font-bold">Manual WebRTC (Copy-Paste)</h2>
 
       <div className="flex space-x-4">
         <video ref={localVideoRef} autoPlay muted playsInline className="w-1/2 border rounded" />
@@ -107,17 +116,17 @@ export default function ManualWebRTC() {
       </div>
 
       <div className="space-x-2">
-        <button onClick={() => createPeer(true)} className="bg-blue-500 text-white px-4 py-2 rounded">Start as Initiator</button>
-        <button onClick={() => createPeer(false)} className="bg-green-500 text-white px-4 py-2 rounded">Start as Receiver</button>
-        <button onClick={handleRemoteSignal} className="bg-purple-500 text-white px-4 py-2 rounded">Submit Remote SDP</button>
+        <button onClick={createOffer} className="bg-blue-500 text-white px-4 py-2 rounded">Create Offer</button>
+        <button onClick={receiveOffer} className="bg-green-500 text-white px-4 py-2 rounded">Receive Offer</button>
+        <button onClick={addAnswer} className="bg-purple-500 text-white px-4 py-2 rounded">Add Answer</button>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <textarea
           className="w-full p-2 border"
-          placeholder="Your SDP (copy this)"
+          placeholder="Local SDP"
           rows={10}
-          value={yourSDP}
+          value={localSDP}
           readOnly
         />
         <textarea
@@ -128,17 +137,6 @@ export default function ManualWebRTC() {
           onChange={(e) => setRemoteSDP(e.target.value)}
         />
       </div>
-
-      <div className="mt-4">
-        <h3 className="font-semibold">📋 Logs</h3>
-        <div className="bg-black text-green-400 font-mono text-sm p-2 h-48 overflow-y-scroll rounded border">
-          {logs.map((log, i) => (
-            <div key={i}>{log}</div>
-          ))}
-        </div>
-      </div>
-
-      {connected && <p className="text-green-600 font-semibold">✅ Peer-to-peer connection established!</p>}
     </div>
   );
 }
