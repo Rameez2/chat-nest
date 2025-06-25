@@ -1,24 +1,32 @@
-"use client"
-import { fetchCurrentUser } from "@/services/users";
-// context/UserContext.js
+"use client";
+
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { fetchCurrentUser } from "@/services/users";
 
 const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true); // 🔁 loading state
 
-    console.log('from user context');
+  useEffect(() => {
+    async function getUser() {
+      try {
+        const currentUser = await fetchCurrentUser();
+        setUser(currentUser);
+      } catch (error) {
+        console.error("Failed to fetch current user:", error);
+        setUser(null);
+      } finally {
+        setLoading(false); // ✅ stop loading whether success or error
+      }
+    }
 
-    useEffect(() => {
-        async function getUser() {
-            await fetchCurrentUser();
-        }   
-    }, []);
-
+    getUser();
+  }, []);
 
   return (
-    <UserContext.Provider value={{ user, setUser }}>
+    <UserContext.Provider value={{ user, setUser, loading }}>
       {children}
     </UserContext.Provider>
   );

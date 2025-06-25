@@ -2,7 +2,9 @@
 
 import { useUser } from "@/context/userContext";
 import { loginWithEmailAndPass } from "@/services/auth";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import FullPageSpinner from "@/components/ui/FullPageSpinner";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -10,9 +12,24 @@ const LoginPage = () => {
     password: "",
   });
 
-  const [loading, setLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [error, setError] = useState("");
-  const {user,setUser} = useUser();
+  const {user,setUser,loading} = useUser();
+  
+  const router = useRouter();
+
+  useEffect(() => {
+    function checkUser() {
+        if(user){   
+            console.log('user exists',user);
+            router.push("/"); // redirect if user is found 
+        }
+        else {
+            console.log('no user');
+        }
+    }
+    checkUser();
+  }, [user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -24,7 +41,7 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setFormLoading(true);
     setError("");
 
     const { email, password } = formData;
@@ -38,11 +55,18 @@ const LoginPage = () => {
       console.error("Login failed:", err);
       setError("Invalid email or password. Please try again.");
     } finally {
-      setLoading(false);
+      setFormLoading(false);
     }
   };
 
+  if(loading) {
+    return <FullPageSpinner/>
+  }
+
+  if(user) return <FullPageSpinner/>
+
   return (
+    
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <form
         onSubmit={handleSubmit}
@@ -86,14 +110,14 @@ const LoginPage = () => {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={formLoading}
           className={`w-full text-white py-2 px-4 rounded-lg transition duration-200 ${
-            loading
+            formLoading
               ? "bg-blue-300 cursor-not-allowed"
               : "bg-blue-500 hover:bg-blue-600"
           }`}
         >
-          {loading ? "Logging in..." : "Login"}
+          {formLoading ? "Logging in..." : "Login"}
         </button>
       </form>
     </div>

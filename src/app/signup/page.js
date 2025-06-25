@@ -1,7 +1,10 @@
 "use client";
 
+import FullPageSpinner from "@/components/ui/FullPageSpinner";
+import { useUser } from "@/context/userContext";
 import { registerUser } from "@/services/auth";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
@@ -11,8 +14,26 @@ const SignUpPage = () => {
     password: "",
   });
 
-  const [loading, setLoading] = useState(false);
+  const [Formloading, setFormLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const {user,setUser,loading} = useUser();
+  
+  const router = useRouter();
+
+  useEffect(() => {
+    function checkUser() {
+        if(user){   
+            console.log('user exists',user);
+            router.push("/"); // redirect if user is found 
+        }
+        else {
+            console.log('no user');
+        }
+    }
+    checkUser();
+  }, [user]);
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -24,22 +45,29 @@ const SignUpPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setFormLoading(true);
     setError("");
 
     const { fullName, username, email, password } = formData;
 
     try {
       console.log("Sign Up Data:", formData);
-      await registerUser(fullName, username, email, password);
+      const res = await registerUser(fullName, username, email, password);
+        setUser(res);
       // Optionally redirect or reset form here
     } catch (err) {
       console.error("Registration failed:", err);
       setError("Failed to register. Please try again.");
     } finally {
-      setLoading(false);
+      setFormLoading(false);
     }
   };
+
+  if(loading) {
+    return <FullPageSpinner/>
+  }
+
+  if(user) return <FullPageSpinner/>
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -115,14 +143,14 @@ const SignUpPage = () => {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={Formloading}
           className={`w-full text-white py-2 px-4 rounded-lg transition duration-200 ${
-            loading
+            Formloading
               ? "bg-blue-300 cursor-not-allowed"
               : "bg-blue-500 hover:bg-blue-600"
           }`}
         >
-          {loading ? "Signing Up..." : "Sign Up"}
+          {Formloading ? "Signing Up..." : "Sign Up"}
         </button>
       </form>
     </div>

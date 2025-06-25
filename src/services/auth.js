@@ -38,7 +38,9 @@ export const registerUser = async (name,username, email, password) => {
       }
     );
 
-    return { user, userDoc };
+    const loginData = await loginWithEmailAndPass(email,password);
+
+    return loginData;
   } catch (error) {
     console.error("Register failed:", error);
     throw error;
