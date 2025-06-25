@@ -10,20 +10,42 @@ export default function AutoWebRTC() {
   const socketRef = useRef(null);
 
   const [username, setUsername] = useState('');
+  const [partnerUsername, setPartnerUsername] = useState('');
   const [status, setStatus] = useState('Idle');
   const [connected, setConnected] = useState(false);
+  
+  // Design
+
+
 
   useEffect(() => {
     return () => {
-      // Cleanup
       if (peerRef.current) peerRef.current.close();
       if (socketRef.current) socketRef.current.disconnect();
     };
   }, []);
 
+  const cleanupConnection = () => {
+    setPartnerUsername('');
+    setConnected(false);
+    setStatus('Partner disconnected.');
+
+    // Close peer connection
+    if (peerRef.current) {
+      peerRef.current.close();
+      peerRef.current = null;
+    }
+
+    // Clear remote video
+    if (remoteVideoRef.current && remoteVideoRef.current.srcObject) {
+      remoteVideoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+      remoteVideoRef.current.srcObject = null;
+    }
+  };
+
   const start = async () => {
     // const socket = io('http://localhost:4000');
-    const socket = io('https://chat-nest-nodejs-production.up.railway.app/');
+    const socket = io('chat-nest-nodejs-production.up.railway.app');
     socketRef.current = socket;
 
     const iceServers = [
@@ -38,9 +60,9 @@ export default function AutoWebRTC() {
           'turn:bn-turn2.xirsys.com:80?transport=tcp',
           'turn:bn-turn2.xirsys.com:3478?transport=tcp',
           'turns:bn-turn2.xirsys.com:443?transport=tcp',
-          'turns:bn-turn2.xirsys.com:5349?transport=tcp'
-        ]
-      }
+          'turns:bn-turn2.xirsys.com:5349?transport=tcp',
+        ],
+      },
     ];
 
     const peer = new RTCPeerConnection({ iceServers });
@@ -55,26 +77,26 @@ export default function AutoWebRTC() {
     };
 
     peer.onicecandidate = (event) => {
-      // Not using trickle ICE, wait for full SDP
       if (event.candidate === null) {
-        if (peer.localDescription.type === 'offer') {
-          socket.emit('send-offer', { offer: peer.localDescription });
-        } else if (peer.localDescription.type === 'answer') {
-          socket.emit('send-answer', { answer: peer.localDescription });
+        const desc = peer.localDescription;
+        if (desc?.type === 'offer') {
+          socket.emit('send-offer', { offer: desc });
+        } else if (desc?.type === 'answer') {
+          socket.emit('send-answer', { answer: desc });
         }
       }
     };
 
     socket.emit('join', { username });
 
-    socket.on('create-offer', async () => {
-      setStatus('Creating offer...');
-      const offer = await peer.createOffer();
-      await peer.setLocalDescription(offer);
-    });
+    socket.on('matched', async ({ role, partnerUsername }) => {
+      setStatus(`Matched with ${partnerUsername}`);
+      setPartnerUsername(partnerUsername);
 
-    socket.on('wait-for-offer', () => {
-      setStatus('Waiting for offer...');
+      if (role === 'offerer') {
+        const offer = await peer.createOffer();
+        await peer.setLocalDescription(offer);
+      }
     });
 
     socket.on('receive-offer', async ({ offer }) => {
@@ -85,51 +107,119 @@ export default function AutoWebRTC() {
     });
 
     socket.on('receive-answer', async ({ answer }) => {
-      setStatus('Received answer. Connected!');
+      setStatus('Connected');
       await peer.setRemoteDescription(new RTCSessionDescription(answer));
     });
 
     socket.on('partner-left', () => {
-      setStatus('Partner disconnected.');
+      cleanupConnection();
     });
 
     setConnected(true);
     setStatus('Searching for a partner...');
   };
 
+
+
+  const getStatusColor = () => {
+    switch (status.toLowerCase()) {
+      case "connected":
+        return "bg-green-500"
+      case "connecting":
+        return "bg-yellow-500"
+      case "disconnected":
+        return "bg-red-500"
+      default:
+        return "bg-gray-500"
+    }
+  }
+
+
   return (
-    <div className="space-y-4 p-4">
-      <h2 className="text-xl font-bold">Auto WebRTC (via Socket.io)</h2>
+     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+      <div className="max-w-6xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl font-bold text-slate-900">WebRTC Video Chat</h1>
+          <p className="text-slate-600 text-lg">Real-time video communication via Socket.io</p>
 
-      {!connected && (
-        <div className="space-x-2">
-          <input
-            type="text"
-            className="border px-2 py-1"
-            placeholder="Enter your username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-          <button
-            onClick={start}
-            disabled={!username}
-            className="bg-blue-500 text-white px-4 py-2 rounded"
-          >
-            Start
-          </button>
+          {/* Status Badge */}
+          <div className="flex items-center justify-center gap-2">
+            <div className={`w-3 h-3 rounded-full ${getStatusColor()}`}></div>
+            <span className="px-3 py-1 bg-slate-200 text-slate-700 text-sm font-medium rounded-full">{status}</span>
+          </div>
         </div>
-      )}
 
-      <p>Status: {status}</p>
+        {/* Connection Card */}
+        {!connected && (
+          <div className="max-w-md mx-auto bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 overflow-hidden">
+            <div className="p-6 text-center border-b border-slate-100">
+              <h2 className="text-xl font-semibold text-slate-800">Join Video Chat</h2>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="username" className="block text-sm font-medium text-slate-700">
+                  Your Username
+                </label>
+                <input
+                  id="username"
+                  type="text"
+                  placeholder="Enter your username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full h-12 px-4 text-center border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                />
+              </div>
+              <button
+                onClick={start}
+                disabled={!username.trim()}
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                Start Video Chat
+              </button>
+            </div>
+          </div>
+        )}
 
-      <div className="flex space-x-4">
-        <div className="flex-1">
-          <h4 className="font-semibold">Your Video</h4>
+        {/* Video Grid */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Local Video */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 overflow-hidden">
+            <div className="p-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <h3 className="text-lg font-semibold text-slate-800">You {username && `(${username})`}</h3>
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="relative aspect-video bg-slate-900 rounded-lg overflow-hidden">
           <video ref={localVideoRef} autoPlay muted playsInline className="w-full border rounded" />
-        </div>
-        <div className="flex-1">
-          <h4 className="font-semibold">Partner Video</h4>
-          <video ref={remoteVideoRef} autoPlay playsInline className="w-full border rounded" />
+
+                {/* Placeholder when no video */}
+
+
+              </div>
+            </div>
+          </div>
+
+          {/* Remote Video */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 overflow-hidden">
+            <div className="p-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${partnerUsername ? "bg-green-500" : "bg-gray-400"}`}></div>
+                <h3 className="text-lg font-semibold text-slate-800">
+                  {partnerUsername ? `Partner (${partnerUsername})` : "Waiting for partner..."}
+                </h3>
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="relative aspect-video bg-slate-900 rounded-lg overflow-hidden">
+                <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                {/* Placeholder when no partner */}
+
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

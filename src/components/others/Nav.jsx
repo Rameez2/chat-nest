@@ -1,16 +1,10 @@
+"use client"
+import { logOutUser } from '@/services/auth';
 import Link from 'next/link';
 
-    // position: sticky;
-    // top: 0;
-    // background: rgba(255, 255, 255, 0.1);
-    // backdrop-filter: blur(5px);
-    // -webkit-backdrop-filter: blur(10px);
-    // padding: 1.5rem 1rem;
-    // margin: 0 auto;
-    // max-width: 1280px;
-    // box-sizing: border-box;
-    // z-index: 50;
-    // border-bottom: 2px solid #dcdcdc;
+// username:'8fUyCPsN4iaQBVt2m85Z7C0-mF6AQK-2yCqX4BlxnxDykeOCip2JN20jhSC7JgoiAAAAAGhZs6JyYW1lZXpyb290',
+// credential: '77d21974-506d-11f0-bb59-0242ac140004',
+
 
 const Nav = () => {
     return (
@@ -43,14 +37,17 @@ const Nav = () => {
             </span>
           </div>
           <div className="hidden md:flex items-center space-x-6">
-            <Link href="#features" className="text-gray-600 hover:text-purple-600 transition-colors">
-              Features
+            <Link href="/login" className="text-gray-600 hover:text-purple-600 transition-colors">
+              login
             </Link>
-            <Link href="#safety" className="text-gray-600 hover:text-purple-600 transition-colors">
-              Safety
+              <Link onClick={logOutUser} href="#" className="text-gray-600 hover:text-purple-600 transition-colors">
+              Log OUT
             </Link>
-            <Link href="#about" className="text-gray-600 hover:text-purple-600 transition-colors">
-              About
+            <Link href="/signup" className="text-gray-600 hover:text-purple-600 transition-colors">
+              signup
+            </Link>
+            <Link href="/" className="text-gray-600 hover:text-purple-600 transition-colors">
+              Home
             </Link>
           </div>
         </nav>
