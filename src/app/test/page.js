@@ -1,141 +1,136 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { io } from 'socket.io-client';
 
-export default function ManualWebRTC() {
+export default function AutoWebRTC() {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const peerRef = useRef(null);
+  const socketRef = useRef(null);
 
-  const [localSDP, setLocalSDP] = useState('');
-  const [remoteSDP, setRemoteSDP] = useState('');
-  const [pc, setPc] = useState(null);
+  const [username, setUsername] = useState('');
+  const [status, setStatus] = useState('Idle');
+  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    // const peerConnection = new RTCPeerConnection();
-
-    // Google’s free STUN server
-    //     const peerConnection = new RTCPeerConnection({
-    //   iceServers: [
-    //     { urls: 'stun:stun.l.google.com:19302' }
-    //   ]
-    // });
-
-    // TURN server
-
-
-const iceServers = [
-  { urls: ["stun:bn-turn2.xirsys.com"] },
-  {
-    username: "8fUyCPsN4iaQBVt2m85Z7C0-mF6AQK-2yCqX4BlxnxDykeOCip2JN20jhSC7JgoiAAAAAGhZs6JyYW1lZXpyb290",
-    credential: "77d21974-506d-11f0-bb59-0242ac140004",
-    urls: [
-      "turn:bn-turn2.xirsys.com:80?transport=udp",
-      "turn:bn-turn2.xirsys.com:3478?transport=udp",
-      "turn:bn-turn2.xirsys.com:80?transport=tcp",
-      "turn:bn-turn2.xirsys.com:3478?transport=tcp",
-      "turns:bn-turn2.xirsys.com:443?transport=tcp",
-      "turns:bn-turn2.xirsys.com:5349?transport=tcp",
-    ]
-  }
-];
-
-    const peerConnection = new RTCPeerConnection({ iceServers });
-
-    setPc(peerConnection);
-
-    // Handle incoming media
-    peerConnection.ontrack = (event) => {
-      remoteVideoRef.current.srcObject = event.streams[0];
-    };
-
-    // Get user media
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then((stream) => {
-      localVideoRef.current.srcObject = stream;
-      stream.getTracks().forEach((track) => peerConnection.addTrack(track, stream));
-    });
-
-    // Handle ICE candidates (trickle ICE disabled for now)
-    peerConnection.onicecandidate = (event) => {
-      if (event.candidate === null) {
-        setLocalSDP(JSON.stringify(peerConnection.localDescription));
-      }
+    return () => {
+      // Cleanup
+      if (peerRef.current) peerRef.current.close();
+      if (socketRef.current) socketRef.current.disconnect();
     };
   }, []);
 
+  const start = async () => {
+    // const socket = io('http://localhost:4000');
+    const socket = io('https://chat-nest-nodejs-production.up.railway.app/');
+    socketRef.current = socket;
 
-  // create offer
-  const createOffer = async () => {
-    try {
-      // Inside createOffer()
-      if (!pc) return alert('Peer connection not ready');
+    const iceServers = [
+      { urls: ['stun:bn-turn2.xirsys.com'] },
+      {
+        username:
+          '8fUyCPsN4iaQBVt2m85Z7C0-mF6AQK-2yCqX4BlxnxDykeOCip2JN20jhSC7JgoiAAAAAGhZs6JyYW1lZXpyb290',
+        credential: '77d21974-506d-11f0-bb59-0242ac140004',
+        urls: [
+          'turn:bn-turn2.xirsys.com:80?transport=udp',
+          'turn:bn-turn2.xirsys.com:3478?transport=udp',
+          'turn:bn-turn2.xirsys.com:80?transport=tcp',
+          'turn:bn-turn2.xirsys.com:3478?transport=tcp',
+          'turns:bn-turn2.xirsys.com:443?transport=tcp',
+          'turns:bn-turn2.xirsys.com:5349?transport=tcp'
+        ]
+      }
+    ];
 
-      // Similar checks for receiveOffer and addAnswer
+    const peer = new RTCPeerConnection({ iceServers });
+    peerRef.current = peer;
 
-      console.log('creating offer...');
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    localVideoRef.current.srcObject = stream;
+    stream.getTracks().forEach((track) => peer.addTrack(track, stream));
 
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-    } catch (error) {
-      console.log(error);
+    peer.ontrack = (event) => {
+      remoteVideoRef.current.srcObject = event.streams[0];
+    };
 
-    }
+    peer.onicecandidate = (event) => {
+      // Not using trickle ICE, wait for full SDP
+      if (event.candidate === null) {
+        if (peer.localDescription.type === 'offer') {
+          socket.emit('send-offer', { offer: peer.localDescription });
+        } else if (peer.localDescription.type === 'answer') {
+          socket.emit('send-answer', { answer: peer.localDescription });
+        }
+      }
+    };
+
+    socket.emit('join', { username });
+
+    socket.on('create-offer', async () => {
+      setStatus('Creating offer...');
+      const offer = await peer.createOffer();
+      await peer.setLocalDescription(offer);
+    });
+
+    socket.on('wait-for-offer', () => {
+      setStatus('Waiting for offer...');
+    });
+
+    socket.on('receive-offer', async ({ offer }) => {
+      setStatus('Received offer. Creating answer...');
+      await peer.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await peer.createAnswer();
+      await peer.setLocalDescription(answer);
+    });
+
+    socket.on('receive-answer', async ({ answer }) => {
+      setStatus('Received answer. Connected!');
+      await peer.setRemoteDescription(new RTCSessionDescription(answer));
+    });
+
+    socket.on('partner-left', () => {
+      setStatus('Partner disconnected.');
+    });
+
+    setConnected(true);
+    setStatus('Searching for a partner...');
   };
-
-  const receiveOffer = async () => {
-    console.log('recieving offer...');
-
-    const offer = JSON.parse(remoteSDP);
-    await pc.setRemoteDescription(new RTCSessionDescription(offer));
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-  };
-
-  const addAnswer = async () => {
-
-    try {
-
-      console.log('recieving offer...');
-      const answer = JSON.parse(remoteSDP);
-      await pc.setRemoteDescription(new RTCSessionDescription(answer));
-    } catch (error) {
-      console.log(error);
-
-    }
-
-  };
-
-
 
   return (
     <div className="space-y-4 p-4">
-      <h2 className="text-xl font-bold">Manual WebRTC (Copy-Paste)</h2>
+      <h2 className="text-xl font-bold">Auto WebRTC (via Socket.io)</h2>
+
+      {!connected && (
+        <div className="space-x-2">
+          <input
+            type="text"
+            className="border px-2 py-1"
+            placeholder="Enter your username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+          <button
+            onClick={start}
+            disabled={!username}
+            className="bg-blue-500 text-white px-4 py-2 rounded"
+          >
+            Start
+          </button>
+        </div>
+      )}
+
+      <p>Status: {status}</p>
 
       <div className="flex space-x-4">
-        <video ref={localVideoRef} autoPlay muted playsInline className="w-1/2 border rounded" />
-        <video ref={remoteVideoRef} autoPlay playsInline className="w-1/2 border rounded" />
-      </div>
-
-      <div className="space-x-2">
-        <button onClick={createOffer} className="bg-blue-500 text-white px-4 py-2 rounded">Create Offer</button>
-        <button onClick={receiveOffer} className="bg-green-500 text-white px-4 py-2 rounded">Receive Offer</button>
-        <button onClick={addAnswer} className="bg-purple-500 text-white px-4 py-2 rounded">Add Answer</button>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <textarea
-          className="w-full p-2 border"
-          placeholder="Local SDP"
-          rows={10}
-          value={localSDP}
-          readOnly
-        />
-        <textarea
-          className="w-full p-2 border"
-          placeholder="Paste remote SDP here"
-          rows={10}
-          value={remoteSDP}
-          onChange={(e) => setRemoteSDP(e.target.value)}
-        />
+        <div className="flex-1">
+          <h4 className="font-semibold">Your Video</h4>
+          <video ref={localVideoRef} autoPlay muted playsInline className="w-full border rounded" />
+        </div>
+        <div className="flex-1">
+          <h4 className="font-semibold">Partner Video</h4>
+          <video ref={remoteVideoRef} autoPlay playsInline className="w-full border rounded" />
+        </div>
       </div>
     </div>
   );
