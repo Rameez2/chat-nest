@@ -38,9 +38,16 @@ const Nav = () => {
           </span>
         </div>
         <div className="hidden md:flex items-center space-x-6">
-          {loading ? <h1>Loading...</h1> : user ? <Link onClick={logOut} href="#" className="text-gray-600 hover:text-purple-600 transition-colors">
+          {loading ? <h1>Loading...</h1> : user ? 
+          <>
+          <Link href="/test" className="text-gray-600 hover:text-purple-600 transition-colors">
+            Video Chat
+          </Link> 
+          <Link onClick={logOut} href="#" className="text-gray-600 hover:text-purple-600 transition-colors">
             Log OUT
-          </Link> :
+          </Link> 
+          </>
+          :
             <>
               <Link href="/login" className="text-gray-600 hover:text-purple-600 transition-colors">
                 login

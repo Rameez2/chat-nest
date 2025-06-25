@@ -1,12 +1,13 @@
-import React from 'react';
+"use client"
 
-const Footer = () => {
-    return (
-      <footer className="container mx-auto px-4 py-8 mt-20 border-t border-gray-200">
-        <div className="flex flex-col md:flex-row justify-between items-center">
-          <div className="flex items-center space-x-2 mb-4 md:mb-0">
-            <div className="w-6 h-6 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+export default function Footer() {
+  return (
+    <footer className="bg-gray-900 text-white py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row items-center justify-between">
+          <div className="flex items-center gap-3 mb-6 md:mb-0">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -15,28 +16,25 @@ const Footer = () => {
                 />
               </svg>
             </div>
-            <span className="font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              ChatConnect
-            </span>
+            <span className="text-xl font-bold">VideoChat</span>
           </div>
-          <div className="flex space-x-6 text-sm text-gray-600">
-            <a href="#" className="hover:text-purple-600 transition-colors">
-              Privacy Policy
-            </a>
-            <a href="#" className="hover:text-purple-600 transition-colors">
-              Terms of Service
-            </a>
-            <a href="#" className="hover:text-purple-600 transition-colors">
-              Community Guidelines
-            </a>
-            <a href="#" className="hover:text-purple-600 transition-colors">
-              Support
-            </a>
+
+          <div className="flex flex-col sm:flex-row items-center gap-6 text-center">
+            <div className="flex gap-6">
+              {["Privacy", "Terms", "Support"].map((item) => (
+                <a
+                  key={item}
+                  href={`#${item.toLowerCase()}`}
+                  className="text-gray-400 hover:text-white transition-colors duration-300"
+                >
+                  {item}
+                </a>
+              ))}
+            </div>
+            <div className="text-gray-400">© 2024 VideoChat. All rights reserved.</div>
           </div>
         </div>
-        <div className="text-center text-sm text-gray-500 mt-4">© 2024 ChatConnect. All rights reserved.</div>
-      </footer>
-    );
+      </div>
+    </footer>
+  )
 }
-
-export default Footer;

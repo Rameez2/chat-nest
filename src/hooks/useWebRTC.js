@@ -11,8 +11,8 @@ export function useWebRTC(username) {
   const socketRef = useRef(null);
 
   const [partnerUsername, setPartnerUsername] = useState('');
-  const [status, setStatus] = useState('Idle');
-  const [connected, setConnected] = useState(false);
+  const [status, setStatus] = useState('idle');
+
 
   useEffect(() => {
     return () => {
@@ -21,6 +21,8 @@ export function useWebRTC(username) {
       cleanupRemoteStream();
     };
   }, []);
+
+
 
   const cleanupRemoteStream = () => {
     if (remoteVideoRef.current && remoteVideoRef.current.srcObject) {
@@ -31,7 +33,6 @@ export function useWebRTC(username) {
 
   const cleanupConnection = () => {
     setPartnerUsername('');
-    setConnected(false);
     setStatus('Partner disconnected.');
 
     if (peerRef.current) {
@@ -40,6 +41,8 @@ export function useWebRTC(username) {
     }
 
     cleanupRemoteStream();
+    // start again after partner is disconnected
+    start()
   };
 
   const start = async () => {
@@ -75,7 +78,8 @@ export function useWebRTC(username) {
     socket.emit('join', { username });
 
     socket.on('matched', async ({ role, partnerUsername }) => {
-      setStatus(`Matched with ${partnerUsername}`);
+      setStatus(`connecting`);
+      // setStatus(`Matched with ${partnerUsername}`);
       setPartnerUsername(partnerUsername);
 
       if (role === 'offerer') {
@@ -85,14 +89,14 @@ export function useWebRTC(username) {
     });
 
     socket.on('receive-offer', async ({ offer }) => {
-      setStatus('Received offer. Creating answer...');
       await peer.setRemoteDescription(new RTCSessionDescription(offer));
       const answer = await peer.createAnswer();
       await peer.setLocalDescription(answer);
+      setStatus('connected');
     });
 
     socket.on('receive-answer', async ({ answer }) => {
-      setStatus('Connected');
+      setStatus('connected');
       await peer.setRemoteDescription(new RTCSessionDescription(answer));
     });
 
@@ -100,17 +104,90 @@ export function useWebRTC(username) {
       cleanupConnection();
     });
 
-    setConnected(true);
-    setStatus('Searching for a partner...');
+    setStatus('searching');
   };
+
+
+// NEXT CALL
+const nextCall = async () => {
+  try {
+    console.log('🔄 Starting next call...');
+    
+    // 1. Clean up existing peer connection, stream, and socket
+    if (peerRef.current) {
+      peerRef.current.close();
+      peerRef.current = null;
+    }
+
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+
+    if (localVideoRef.current?.srcObject) {
+      localVideoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+      localVideoRef.current.srcObject = null;
+    }
+
+    cleanupRemoteStream();
+
+    setPartnerUsername('');
+    setStatus('reconnecting');
+
+    // 2. Restart the call
+    await start();
+  } catch (error) {
+    console.error('Error during nextCall:', error);
+    setStatus('Failed to reconnect');
+  }
+};
+
+// STOP CALL
+
+const stopCall = async () => {
+  try {
+    console.log('🛑 Stopping current call...');
+
+    // 1. Close peer connection
+    if (peerRef.current) {
+      peerRef.current.close();
+      peerRef.current = null;
+    }
+
+    // 2. Disconnect from socket
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+
+    // 3. Stop local stream
+    if (localVideoRef.current?.srcObject) {
+      localVideoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+      localVideoRef.current.srcObject = null;
+    }
+
+    // 4. Stop remote stream
+    cleanupRemoteStream();
+
+    // 5. Reset state
+    setPartnerUsername('');
+    setStatus('idle');
+  } catch (error) {
+    console.error('❌ Error while stopping call:', error);
+    setStatus('error');
+  }
+};
+
+
 
   return {
     localVideoRef,
     remoteVideoRef,
     partnerUsername,
     status,
-    connected,
     start,
+    nextCall,
+    stopCall,
     cleanupConnection,
   };
 }

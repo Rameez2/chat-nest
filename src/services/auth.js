@@ -1,10 +1,6 @@
 import { account, databases } from "@/lib/appwrite";
 import { ID } from "appwrite";
 
-const DATABASE_ID = "685bdff8003600714594"
-const USERS_COLLECTION_ID = "685be820001dd374ba64"
-
-
 // Function to check if a session is active
 const checkSession = async () => {
   try {
@@ -27,8 +23,8 @@ export const registerUser = async (name,username, email, password) => {
 
     // Step 2: Add user data to the 'users' collection in the database
     const userDoc = await databases.createDocument(
-      DATABASE_ID,
-      USERS_COLLECTION_ID,
+      process.env.NEXT_PUBLIC_DB_ID,
+      process.env.NEXT_PUBLIC_DB_USERS_ID,
       user.$id, // Use same ID as Auth user for consistency
       {
         username,
@@ -37,7 +33,6 @@ export const registerUser = async (name,username, email, password) => {
         userId: user.$id, // Optional redundancy
       }
     );
-
     const loginData = await loginWithEmailAndPass(email,password);
 
     return loginData;
