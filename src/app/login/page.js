@@ -5,6 +5,8 @@ import { loginWithEmailAndPass } from "@/services/auth";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import FullPageSpinner from "@/components/ui/FullPageSpinner";
+import SuccessToast from "@/components/ui/SuccessToast";
+import ErrorToast from "@/components/ui/ErrorToast";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -14,6 +16,8 @@ const LoginPage = () => {
 
   const [formLoading, setFormLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success,setSuccess] = useState("");
+
   const {user,setUser,loading} = useUser();
   
   const router = useRouter();
@@ -49,11 +53,12 @@ const LoginPage = () => {
     try {
       console.log("Login Data:", formData);
       const res = await loginWithEmailAndPass(email, password);
-        setUser(res)
+      setSuccess("Login Success!")
+      setUser(res)
       // Optionally redirect or handle successful login
     } catch (err) {
       console.error("Login failed:", err);
-      setError("Invalid email or password. Please try again.");
+      setError(err.message);
     } finally {
       setFormLoading(false);
     }
@@ -67,6 +72,7 @@ const LoginPage = () => {
 
   return (
     
+    <>
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <form
         onSubmit={handleSubmit}
@@ -121,6 +127,16 @@ const LoginPage = () => {
         </button>
       </form>
     </div>
+{error && (
+  <ErrorToast error={error} setError={setError}/>
+)}
+
+{success && (
+  <SuccessToast success={success} setSuccess={setSuccess}/>
+)}
+
+
+      </>
   );
 };
 

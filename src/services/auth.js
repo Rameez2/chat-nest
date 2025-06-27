@@ -1,5 +1,6 @@
 import { account, databases } from "@/lib/appwrite";
 import { ID } from "appwrite";
+import { fetchCurrentUser } from "./users";
 
 // Function to check if a session is active
 const checkSession = async () => {
@@ -11,7 +12,7 @@ const checkSession = async () => {
   }
 };
 
-export const registerUser = async (name,username, email, password) => {
+export const registerUser = async (name,username,age,gender, email, password) => {
   try {
     // Step 1: Create the user in Appwrite Auth
     const user = await account.create(
@@ -30,6 +31,8 @@ export const registerUser = async (name,username, email, password) => {
         username,
         email,
         fullName:name,
+        age:age,
+        gender:gender,
         userId: user.$id, // Optional redundancy
       }
     );
@@ -45,8 +48,8 @@ export const registerUser = async (name,username, email, password) => {
 export const loginWithEmailAndPass = async (email, password) => {
   const response = await account.createEmailPasswordSession(email, password);
   console.log('response',response);
-  
-  return response;
+  let currentUserData = await fetchCurrentUser();
+  return currentUserData;
 }
 
 

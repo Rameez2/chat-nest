@@ -8,6 +8,14 @@ import FullPageSpinner from '@/components/ui/FullPageSpinner';
 
 export default function AutoWebRTC() {
   const [username, setUsername] = useState('');
+  const [showFilters, setShowFilters] = useState(false)
+  const [filters, setFilters] = useState({
+    country: "",
+    gender: "",
+    age: "",
+  })
+
+
   const router = useRouter();
 
   const { user, loading } = useUser();
@@ -26,6 +34,9 @@ export default function AutoWebRTC() {
   }, [user, loading]);
 
 
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value }))
+  }
 
 
   // Pass username to hook to initialize connection logic
@@ -77,7 +88,7 @@ export default function AutoWebRTC() {
             </svg>
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-3 sm:mb-4">
-            WebRTC Video Chat
+            Chat Nest
           </h1>
           <p className="text-lg sm:text-xl text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
             Connect instantly with people around the world through real-time video communication
@@ -91,39 +102,57 @@ export default function AutoWebRTC() {
         </div>
 
         {/* Connection Card */}
-        {status === "idle" && 
-        <div className="max-w-md mx-auto mb-6 sm:mb-8 lg:mb-12">
-          <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 sm:p-6 text-center">
-              <h2 className="text-xl sm:text-2xl font-bold text-white">Join Video Chat</h2>
-            </div>
-            <div className="p-6 sm:p-8 space-y-4 sm:space-y-6">
-              <div className="space-y-2 sm:space-y-3">
-                <label
-                  htmlFor="username"
-                  className="block text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide"
-                >
-                  Your Username
-                </label>
-                <input
-                  id="username"
-                  type="text"
-                  placeholder="Enter your username"
-                  value={username}
-                  disabled
-                  className="w-full h-12 sm:h-14 px-4 sm:px-6 text-center bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 text-base sm:text-lg font-medium"
-                />
+        {status === "idle" &&
+          <div className="max-w-md mx-auto mb-6 sm:mb-8 lg:mb-12">
+            <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 sm:p-6 text-center">
+                <h2 className="text-xl sm:text-2xl font-bold text-white">Join Video Chat</h2>
               </div>
-              <button
-                onClick={start}
-                disabled={!username.trim()}
-                className="w-full h-12 sm:h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500/20 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
-              >
-                Start Video Chat
-              </button>
+              <div className="p-6 sm:p-8 space-y-4 sm:space-y-6">
+                <div className="space-y-2 sm:space-y-3">
+                  <label
+                    htmlFor="username"
+                    className="block text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide"
+                  >
+                    Your Username
+                  </label>
+                  <input
+                    id="username"
+                    type="text"
+                    placeholder="Enter your username"
+                    value={username}
+                    disabled
+                    className="w-full h-12 sm:h-14 px-4 sm:px-6 text-center bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 text-base sm:text-lg font-medium"
+                  />
+                </div>
+
+                {/* Filter Button */}
+                <button
+                  onClick={() => setShowFilters(true)}
+                  className="w-full h-12 sm:h-14 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-purple-500/20 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"
+                    />
+                  </svg>
+                  Set Filters
+                </button>
+
+                <button
+                  onClick={start}
+                  disabled={username && !username.trim()}
+                  className="w-full h-12 sm:h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500/20 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg cursor-pointer"
+                >
+                  Start Video Chat
+                </button>
+
+              </div>
             </div>
           </div>
-        </div>
         }
 
         {/* Video Container - Both videos in single div */}
@@ -215,6 +244,87 @@ export default function AutoWebRTC() {
           </div>
         )}
       </div>
+
+      {/* Filter Popup Modal */}
+      {showFilters && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 w-full max-w-md overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-4 sm:p-6 text-center">
+              <h2 className="text-xl sm:text-2xl font-bold text-white">Filter Options</h2>
+            </div>
+            <div className="p-6 sm:p-8 space-y-6">
+              {/* Country Filter */}
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">Country</label>
+                <select
+                  value={filters.country}
+                  onChange={(e) => handleFilterChange("country", e.target.value)}
+                  className="w-full h-12 px-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-300 text-base font-medium"
+                >
+                  <option value="">Any Country</option>
+                  <option value="us">United States</option>
+                  <option value="uk">United Kingdom</option>
+                  <option value="ca">Canada</option>
+                  <option value="au">Australia</option>
+                  <option value="de">Germany</option>
+                  <option value="fr">France</option>
+                  <option value="jp">Japan</option>
+                  <option value="in">India</option>
+                </select>
+              </div>
+
+              {/* Gender Filter */}
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">Gender</label>
+                <select
+                  value={filters.gender}
+                  onChange={(e) => handleFilterChange("gender", e.target.value)}
+                  className="w-full h-12 px-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-300 text-base font-medium"
+                >
+                  <option value="">Any Gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              {/* Age Filter */}
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">Age Range</label>
+                <select
+                  value={filters.age}
+                  onChange={(e) => handleFilterChange("age", e.target.value)}
+                  className="w-full h-12 px-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-300 text-base font-medium"
+                >
+                  <option value="">Any Age</option>
+                  <option value="18-25">18-25</option>
+                  <option value="26-35">26-35</option>
+                  <option value="36-45">36-45</option>
+                  <option value="46-55">46-55</option>
+                  <option value="56+">56+</option>
+                </select>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="flex-1 h-12 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-gray-500/20"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="flex-1 h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-purple-500/20 transform hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  Apply Filters
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

@@ -16,7 +16,7 @@ export default function Footer() {
                 />
               </svg>
             </div>
-            <span className="text-xl font-bold">VideoChat</span>
+            <span className="text-xl font-bold">Chat Nest</span>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-6 text-center">
