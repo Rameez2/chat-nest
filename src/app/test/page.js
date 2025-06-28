@@ -49,7 +49,7 @@ export default function AutoWebRTC() {
     nextCall,
     stopCall,
     cleanupConnection,
-  } = useWebRTC(username);
+  } = useWebRTC({user,filters});
 
   // Status color helper
   const getStatusColor = () => {

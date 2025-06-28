@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { ICE_SERVERS, SOCKET_URL } from '../config/config';
 
-export function useWebRTC(username) {
+export function useWebRTC({user,filters}) {
+  console.log('filters web',filters);
+  
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const peerRef = useRef(null);
@@ -75,7 +77,7 @@ export function useWebRTC(username) {
       }
     };
 
-    socket.emit('join', { username });
+    socket.emit('join', { user,filters }); // send join signal to server
 
     socket.on('matched', async ({ role, partnerUsername }) => {
       setStatus(`connecting`);
