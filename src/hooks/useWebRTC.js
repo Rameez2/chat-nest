@@ -77,7 +77,7 @@ export function useWebRTC({user,filters}) {
       }
     };
 
-    socket.emit('join', { user,filters }); // send join signal to server
+    socket.emit('join', { username:user.username }); // send join signal to server
 
     socket.on('matched', async ({ role, partnerUsername }) => {
       setStatus(`connecting`);

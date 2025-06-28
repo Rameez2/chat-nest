@@ -1,5 +1,6 @@
 // config.js
 export const SOCKET_URL = 'chat-nest-nodejs-production.up.railway.app';
+// export const SOCKET_URL = 'https://chat-nest-nodejs.fly.dev/';
 // export const SOCKET_URL = 'localhost:4000';
 
 export const ICE_SERVERS = [
